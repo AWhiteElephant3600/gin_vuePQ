@@ -1,0 +1,9 @@
+datasource:
+  driverName: postgresql
+  host: 127.0.0.1
+  port: 5432
+  dbname: ginessential
+  user: postgres
+  password: 66666
+  sslmode: disable
+  TimeZone: Asia/Shanghai
