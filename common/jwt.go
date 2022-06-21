@@ -14,6 +14,7 @@ type Claims struct {
 }
 
 func ReleaseToken(user model.User) (string, error) {
+	// 定义过期时间
 	expirationTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := &Claims{
 		UserId: user.ID,

@@ -14,7 +14,7 @@ func NewPostRepository() PostRepository {
 	return PostRepository{DB: common.GetDB()}
 }
 
-func (p PostRepository) Create(post model.Post) error {
+func (p PostRepository) Create(post *model.Post) error {
 
 	if err := p.DB.Create(&post).Error; err != nil {
 		return err
@@ -23,7 +23,7 @@ func (p PostRepository) Create(post model.Post) error {
 
 }
 
-func (p PostRepository) Update(post model.Post) error {
+func (p PostRepository) Update(post *model.Post) error {
 
 	// 更新文章
 	if err := p.DB.Save(&post).Error; err != nil {
@@ -33,17 +33,17 @@ func (p PostRepository) Update(post model.Post) error {
 	return nil
 }
 
-func (p PostRepository) Show(postId string) (model.Post, error) {
+func (p PostRepository) Show(postId string) (*model.Post, error) {
 
 	var post model.Post
 	if err := p.DB.Preload("Category").Where("id = ?", postId).First(&post).Error; err != nil {
-		return post, err
+		return nil, err
 	}
 
-	return post, nil
+	return &post, nil
 }
 
-func (p PostRepository) Delete(post model.Post) error {
+func (p PostRepository) Delete(post *model.Post) error {
 
 	if err := p.DB.Delete(&post).Error; err != nil {
 		return err

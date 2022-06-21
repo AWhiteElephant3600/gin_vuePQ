@@ -1,9 +1,10 @@
 package controller
 
 import (
+	"gin_vuePQ/common"
 	"gin_vuePQ/model"
-	"gin_vuePQ/repository"
 	"gin_vuePQ/response"
+	"gin_vuePQ/service"
 	"gin_vuePQ/vo"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -16,14 +17,12 @@ type IPostController interface {
 }
 
 type PostController struct {
-	Repository repository.PostRepository
+	Service service.IPostService
 }
 
 func NewPostController() IPostController {
-	repository := repository.NewPostRepository()
-	// 绑定User结构体,根据结构体属性的声明自动生成对应的表
-	repository.DB.AutoMigrate(model.Post{})
-	return PostController{Repository: repository}
+	service := service.NewPostService()
+	return PostController{Service: service}
 }
 
 func (p PostController) Create(ctx *gin.Context) {
@@ -39,7 +38,7 @@ func (p PostController) Create(ctx *gin.Context) {
 	user, _ := ctx.Get("user")
 
 	// 创建post
-	post := model.Post{
+	post := &model.Post{
 		UserId:     user.(model.User).ID,
 		CategoryId: requestPost.CategoryId,
 		Title:      requestPost.Title,
@@ -47,7 +46,7 @@ func (p PostController) Create(ctx *gin.Context) {
 		Content:    requestPost.Content,
 	}
 
-	if err := p.Repository.Create(post); err != nil {
+	if err := p.Service.Create(post); err != nil {
 		panic(err)
 		return
 	}
@@ -74,7 +73,9 @@ func (p PostController) Update(ctx *gin.Context) {
 	postId := ctx.Params.ByName("id")
 
 	var post model.Post
-	if err := p.Repository.DB.Preload("Category").Where("id = ?", postId).First(&post).Error; err != nil {
+
+	DB := common.GetDB()
+	if err := DB.Preload("Category").Where("id = ?", postId).First(&post).Error; err != nil {
 		response.Fail(ctx, nil, "文章不存在")
 		return
 	}
@@ -93,7 +94,7 @@ func (p PostController) Update(ctx *gin.Context) {
 	post.HeadImg = requestPost.HeadImg
 	post.CategoryId = requestPost.CategoryId
 
-	if err := p.Repository.Update(post); err != nil {
+	if err := p.Service.Update(&post); err != nil {
 		response.Fail(ctx, gin.H{"err": err.Error()}, "更新失败")
 		return
 	}
@@ -111,7 +112,7 @@ func (p PostController) Show(ctx *gin.Context) {
 	// 获取path中的id
 	postId := ctx.Params.ByName("id")
 
-	post, err := p.Repository.Show(postId)
+	post, err := p.Service.Show(postId)
 	if err != nil {
 		response.Fail(ctx, gin.H{"err": err.Error()}, "文章不存在")
 		return
@@ -123,7 +124,7 @@ func (p PostController) Show(ctx *gin.Context) {
 func (p PostController) Delete(ctx *gin.Context) {
 	postId := ctx.Params.ByName("id")
 
-	post, err := p.Repository.Show(postId)
+	post, err := p.Service.Show(postId)
 	if err != nil {
 		response.Fail(ctx, gin.H{"err": err.Error()}, "文章不存在")
 		return
@@ -137,7 +138,7 @@ func (p PostController) Delete(ctx *gin.Context) {
 		return
 	}
 
-	err = p.Repository.Delete(post)
+	err = p.Service.Delete(post)
 	if err != nil {
 		response.Fail(ctx, nil, "删除失败")
 		return
@@ -152,7 +153,7 @@ func (p PostController) PageList(ctx *gin.Context) {
 	pageNum, _ := strconv.Atoi(ctx.DefaultQuery("pageNum", "1"))
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "10"))
 
-	posts, total, err := p.Repository.PageList(pageNum, pageSize)
+	posts, total, err := p.Service.PageList(pageNum, pageSize)
 	if err != nil {
 		response.Fail(ctx, nil, "分页展示失败")
 	}

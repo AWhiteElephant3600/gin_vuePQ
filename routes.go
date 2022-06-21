@@ -2,8 +2,11 @@ package main
 
 import (
 	"gin_vuePQ/controller"
+	_ "gin_vuePQ/docs" // 千万不要忘了导入把你上一步生成的docs
 	"gin_vuePQ/middleware"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	gs "github.com/swaggo/gin-swagger"
 )
 
 func CollectRoute(r *gin.Engine) *gin.Engine {
@@ -31,5 +34,6 @@ func CollectRoute(r *gin.Engine) *gin.Engine {
 	postRoutes.DELETE("/:id", postController.Delete)
 	postRoutes.GET("/page/list", postController.PageList)
 
+	r.GET("/swagger/*any", gs.WrapHandler(swaggerFiles.Handler))
 	return r
 }

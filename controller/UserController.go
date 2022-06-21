@@ -2,8 +2,8 @@ package controller
 
 import (
 	"gin_vuePQ/model"
-	"gin_vuePQ/repository"
 	"gin_vuePQ/response"
+	"gin_vuePQ/service"
 	"gin_vuePQ/util"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -17,16 +17,24 @@ type IUserController interface {
 }
 
 type UserController struct {
-	Repository repository.UserRepository
+	Service service.IUserService
 }
 
 func NewUserController() IUserController {
-	repository := repository.NewUserRepository()
-	// 绑定User结构体,根据结构体属性的声明自动生成对应的表
-	repository.DB.AutoMigrate(model.User{})
-	return UserController{Repository: repository}
+	service := service.NewUserService()
+	return UserController{Service: service}
 }
 
+// UserControllerRegister 用户注册列表接口
+// @Summary 用户注册接口
+// @Description 可用户注册
+// @Tags 可用户注册
+// @Accept application/json
+// @Produce application/json
+// @Param object query model.User false "查询参数"
+// @Security ApiKeyAuth
+// @Success 200
+// @Router /api/auth/register [post]
 func (u UserController) Register(ctx *gin.Context) {
 	var requestUser = model.User{}
 	ctx.Bind(&requestUser)
@@ -56,7 +64,7 @@ func (u UserController) Register(ctx *gin.Context) {
 	//	return
 	//}
 
-	token, err := u.Repository.Register(requestUser)
+	token, err := u.Service.Register(requestUser)
 	if err != nil {
 		response.Fail(ctx, gin.H{"err": err.Error()}, "注册失败")
 		return
@@ -68,6 +76,7 @@ func (u UserController) Register(ctx *gin.Context) {
 }
 
 func (u UserController) Login(ctx *gin.Context) {
+	// 接收前端传过来的手机号密码
 	var requestUser = model.User{}
 	ctx.Bind(&requestUser)
 
@@ -78,8 +87,8 @@ func (u UserController) Login(ctx *gin.Context) {
 		response.Response(ctx, http.StatusUnprocessableEntity, 422, nil, "手机号必须为11位")
 		return
 	}
-
-	token, err := u.Repository.Login(requestUser)
+	// 将登录的user实体传到持久层的Login方法中
+	token, err := u.Service.Login(requestUser)
 	if err != nil {
 		response.Fail(ctx, gin.H{"err": err.Error()}, "登陆失败")
 		return
@@ -90,7 +99,7 @@ func (u UserController) Login(ctx *gin.Context) {
 }
 
 func (u UserController) Info(ctx *gin.Context) {
-	userDto := u.Repository.Info(ctx)
+	userDto := u.Service.Info(ctx)
 	ctx.JSON(http.StatusOK, gin.H{"code": 200, "data": gin.H{"user": userDto}})
 }
 
